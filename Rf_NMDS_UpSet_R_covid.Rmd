@@ -1,0 +1,290 @@
+---
+title: "COVID-19 Metabolic Modeling Flux Analysis"
+author: "Lillian Dillard"
+date: "8/02/2021"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("~/")
+library(vegan)
+library(randomForest)
+library(randomForestExplainer)
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(readxl)
+library(tidyverse)
+library(xlsx)
+library(UpSetR)
+library(reactable)
+
+# colorblind friendly palette with grey
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
+               "#D55E00", "#CC79A7")
+```
+
+# COVID-19 Metabolomics Analysis
+
+NMDS Analysis of ALL metabolites
+```{r Metabolomics_NMDS, echo=TRUE}
+#load data and set input and responses
+model <- read_csv("endogenous_metabolomics.csv")
+
+model$group <- as.factor(model$group)
+
+#add value to each cell so no negatives
+response <- model$group
+input <- as.data.frame(data.matrix(model[-1])) + 1000
+
+#run ordination with bray curtis
+ord <- metaMDS(input)
+data.scores <- as.data.frame(scores(ord))
+data.scores$model <- response 
+
+# Measure of centroid
+model_centroids <- aggregate(cbind(NMDS1,NMDS2) ~ model, data = data.scores, mean)
+
+#PERMANOVA
+adon.results<-adonis(input ~ response, method="bray",perm=999)
+print(adon.results)
+
+#plot NMDS with measure of centroid for each model
+
+p <- ggplot(data=data.scores) + 
+  stat_ellipse(aes(x=NMDS1,y=NMDS2,colour=model),level = 0.50) +
+  geom_point(aes(x=NMDS1,y=NMDS2,colour=model),size=1) +
+  geom_point(data = model_centroids, aes(x=NMDS1, y=NMDS2, colour=model,
+                                          shape = model), size = 4) +
+  theme_classic()+
+  xlab(NULL)+ ylab(NULL) +
+  scale_color_manual(values = cbPalette,name = "Model Type",
+                    labels = c("Non-Acute COVID-19",
+                               "Severe COVID-19")) +
+  scale_shape(guide = 'none')
+
+p <- p + ggtitle("NMDS: Endogenous Differential Metabolomics")
+p <- p + theme(text = element_text(size = 15))
+p <- p + annotate(geom = 'text', label = 'R²= 0.11\np-value= 0.001', x = Inf, y = -.00025, hjust = 1, vjust = 0)
+
+p
+#right click graph and save as image
+```
+
+Random Forest to Select for MOST predictive metabolites
+```{r Metabolomics_RF, echo=TRUE}
+#convert all columns to names for random forest
+names(model) <- make.names(names(model))
+
+#conduct random forest with 500 trees
+#https://cran.rstudio.com/web/packages/randomForestExplainer/vignettes/randomForestExplainer.html
+set.seed(2017)
+forest <- randomForest(group ~ ., data = model, localImp = TRUE)
+importance_frame <- measure_importance(forest)
+```
+
+NMDS with only SIGNFICANTLY predictive Metabolites as identified by RF
+
+```{r Metabolomics_nmds_filtered, echo=TRUE}
+
+#run ordination with bray curtis
+top_importance_frame <- importance_frame %>% 
+  filter(p_value<=0.05) %>%
+  filter(accuracy_decrease >= 0.0001) %>%
+  select(c(variable))
+
+#add value to each cell so no negatives
+input <- as.data.frame(data.matrix(model[top_importance_frame$variable]))
+response <- model$group
+
+ord <- metaMDS(input)
+data.scores <- as.data.frame(scores(ord))
+data.scores$model <- response 
+
+# Measure of centroid
+model_centroids <- aggregate(cbind(NMDS1,NMDS2) ~ model, data = data.scores, mean)
+
+#PERMANOVA for separation
+adon.results<-adonis(input ~ response, method="bray",perm=999)
+print(adon.results)
+
+#plot NMDS with measure of centroid for each model
+
+p <- ggplot(data=data.scores) + 
+  stat_ellipse(aes(x=NMDS1,y=NMDS2,colour=model),level = 0.50) +
+  geom_point(aes(x=NMDS1,y=NMDS2,colour=model),size=1) +
+  geom_point(data = model_centroids, aes(x=NMDS1, y=NMDS2, colour=model,
+                                          shape = model), size = 4) +
+  theme_classic()+
+  xlab(NULL)+ ylab(NULL) +
+  scale_color_manual(values = cbPalette,name = "Model Type",
+                    labels = c("Non-Acute COVID-19",
+                               "Severe COVID-19")) +
+  scale_shape(guide = 'none')
+
+p <- p + ggtitle("Endogenous Differential Metabolomics")
+p <- p + theme(text = element_text(size = 15))
+p <- p + annotate(geom = 'text', label = 'R²= 0.18\np-value= 0.001', x = Inf, y = -.0035, hjust = 1, vjust = 0)
+
+p
+```
+Upset Plot Comparing Models
+
+```{r}
+#Create UpsetR plot from nonacute, severe, open exchange lists from python. These reactions are present in each model but don't belong to consensus set across 4 models
+listInput <- list(NonAcute = c('ALDD20xm', 'ALDD2xm', 'ALDD2y', 'AMPDA', 'EX_ps_hs_e', 'LCADi_D', 'NABTNO', 'PGLYCt', 'PVD3', 'PYNP2r', 'TMABADH', 'EX_ahdt_e', 'EX_HC00250_e', 'EX_HC01361_e', 'SPTc', 'r0242', 'r0249', 'GMPR', 'r0408', 'r0409', 'BETALDHx', 'AASAD3', 'r0610', 'r0642', 'r0688', 'r0892', 'r0940', 'RE3346M', 'INSTt4_2', 'PIt9', 'FAOXC15NADx', 'GLCt4', 'CYSTGL', 'DURIPP', 'GK1', 'SK_vitd3_c', 'PIt2r', 'RPE', 'TKT1', 'GCALDD', 'ALDD2x', 'SK_dchac_c', 'PFK', 'GLYALDDr', 'EX_pyr_e', 'IMACTD', 'LCADi', 'HMR_4079', 'URIK2', 'AGTix', 'ALDD20x', 'ALDD21', 'BAMPPALDOX', 'CYTDK1', 'DHCR71r', 'DHCR72r', 'EX_atp_e', 'EX_inost_e', 'EX_pglyc_hs_e', 'EX_utp_e', 'RE2112C', 'RE3346C', 'EX_crm_hs_e', 'PIt8', 'RE3012C', 'RE3012M', 'RE3012R', 'RPEc', 'DGK1', 'RPI', 'TKT2', 'DCMPDA', 'SK_cholate_c', 'ABUTD', 'CRMte', 'HMR_1565', 'LALDO2', 'HMR_4782', 'SK_ile__L_c', 'SK_leu__L_c', 'SK_trp__L_c', 'SK_glu__L_c', 'GCALDDm', 'GLACO', 'GLYCLTDy', 'HPYRRy', 'LCADm', 'PSt3', 'SPTix', 'TRIOK', 'URIK1', 'VD3', 'r0191', 'r0193', 'r0393', 'DUTCP', 'BETALDHy', 'r0587', 'r0611', 'r0643', 'r0707', '5HOXINDACTOX', 'r1116', 'DUTUP', 'FAOXC15NADPx', 'HMR_4816'),
+                  Severe= c('ALCD21_D', 'ALCD22_D', 'ALDD20xm', 'ALDD2xm', 'ALDD2y', 'AMPDA', 'FALDH', 'HPYRR2x_1', 'LALDO', 'LCADi_D', 'NABTNO', 'PVD3', 'PYNP2r', 'TMABADH', 'SPTc', 'r0249', 'GMPR', 'r0408', 'r0409', 'BETALDHx', 'AASAD3', 'r0610', 'r0642', 'r0688', 'r1378', 'RE3346M', 'FAOXC15NADx', 'DURIPP', 'GK1', 'SK_vitd3_c', 'RPE', 'TKT1', 'GCALDD', 'ALDD2x', 'SK_dchac_c', 'PFK', 'GLYALDDr', 'EX_pyr_e', 'IMACTD', 'LCADi', 'HMR_4079', 'HMR_6633', 'HMR_9804', '34DHOXPEGOX', 'AGTix', 'LCARS', 'ALCD22_L', 'ALCD2x', 'ALDD20x', 'ALDD21', 'BAMPPALDOX', 'DHCR71r', 'DHCR72r', 'RE2112C', 'RE3346C', 'RE3012C', 'RE3012M', 'RE3012R', 'RPEc', 'SK_akg_c', 'DGK1', 'RPI', 'TKT2', 'DCMPDA', 'SK_cholate_c', 'ALCD1', 'ABUTD', 'GLXO1', 'LDH_D', 'HMR_1129', 'HMR_1565', 'LALDO2', 'HMR_3859', 'SK_glu__L_c', 'GCALDDm', 'GLACO', 'GLYCLTDy', 'HPYRRy', 'LCADm', 'LDH_Lm', 'SPTix', 'TRIOK', 'VD3', 'r0191', 'r0393', 'BETALDHy', 'r0611', 'r0643', 'r0739', '5HOXINDACTOX', 'FAOXC15NADPx'),
+                  Open = c('ALCD21_D', 'ALCD22_D', 'EX_ps_hs_e', 'FALDH', 'HPYRR2x_1', 'LALDO', 'PGLYCt', 'EX_ahdt_e', 'EX_HC00250_e', 'EX_HC01361_e', 'r0242', 'r0892', 'r0940', 'r1378', 'INSTt4_2', 'PIt9', 'GLCt4', 'CYSTGL', 'PIt2r', 'HMR_6633', 'URIK2', 'HMR_9804', '34DHOXPEGOX', 'LCARS', 'ALCD22_L', 'ALCD2x', 'CYTDK1', 'EX_atp_e', 'EX_inost_e', 'EX_pglyc_hs_e', 'EX_utp_e', 'EX_crm_hs_e', 'PIt8', 'SK_akg_c', 'ALCD1', 'GLXO1', 'LDH_D', 'CRMte', 'HMR_1129', 'HMR_3859', 'HMR_4782', 'SK_ile__L_c', 'SK_leu__L_c', 'SK_trp__L_c', 'LDH_Lm', 'PSt3', 'URIK1', 'r0193', 'DUTCP', 'r0587', 'r0707', 'r0739', 'r1116', 'DUTUP', 'HMR_4816'))
+names(listInput) = c("Non-Acute COVID-19", "Severe COVID-19", "Open Exchanges")
+upsetplot <-upset(fromList(listInput), 
+                  mainbar.y.label='Number of Shared Reactions',
+                  sets.x.label = 'Nonconsensus Rxns',
+                  text.scale = c(1.8,1,1.5,.8),
+                  point.size = 5, 
+                  line.size = 1.2,
+                  order.by = "freq",
+                  keep.order = TRUE)
+upsetplot #manually save from viewer so that text fits
+```
+
+# Model 1: open model vs min media model(nonacute) vs severe model
+
+Conduct Random Forest: identify most predictive reactions for each model
+
+Definitions
+
+Mean Minimal Depth: Minimal depth for a variable in a tree equals to the depth 
+                    of the node which splits on that variable and is the closest 
+                    to the root of the tree
+Times a Root: total number of trees in which Xj is used for splitting the root 
+              node (i.e., the whole sample is divided into two based on the 
+              value of Xj)
+
+Number of Nodes: total number of nodes that use Xj for splitting (it is usually 
+                equal to no_of_trees if trees are shallow)
+
+```{r Model1_RF, echo=TRUE}
+#load data and convert rxn ids to rxn names 
+model1 <- read_excel("commonrxn_fluxdata.xlsx", sheet = 1)
+model1$Model <- as.factor(model1$Model)
+
+#add pre-fix to column names so that none start with number --> will cause issue with random forest
+colnames(model1) <- paste("pre", colnames(model1), sep = "_")
+
+#conduct random forest with 500 trees
+#https://cran.rstudio.com/web/packages/randomForestExplainer/vignettes/randomForestExplainer.html
+set.seed(2017)
+forest <- randomForest(pre_Model ~ ., data = model1, localImp = TRUE)
+varImpPlot(forest, n.var = 10, main = "Top 10 Predictive Rxns")
+
+#https://cran.rstudio.com/web/packages/randomForestExplainer/vignettes/randomForestExplainer.html
+importance_frame <- measure_importance(forest)
+plot_multi_way_importance(importance_frame, size_measure = "no_of_nodes") + 
+  theme_classic()
+plot_importance_rankings(importance_frame)
+```
+
+Create NMDS Plot & run statistics to assess model separation
+
+```{r Model1_NMDS, echo=TRUE}
+#load data and set input and responses
+model1 <- read_excel("commonrxn_fluxdata.xlsx", sheet = 1)
+model1$Model <- as.factor(model1$Model)
+
+#add value to each cell so no negatives
+response <- model1$Model
+input <- model1[-1] + 1000
+
+#run ordination with bray curtis
+ord <- metaMDS(input)
+data.scores <- as.data.frame(scores(ord))
+data.scores$model <- response 
+
+# Measure of centroid
+model1_centroids <- aggregate(cbind(NMDS1,NMDS2) ~ response, data = data.scores, mean)
+
+#PERMANOVA
+adon.results<-adonis(input ~ response, method="bray",perm=999)
+print(adon.results)
+
+#plot NMDS with measure of centroid for each model
+
+p <- ggplot(data=data.scores) + 
+  stat_ellipse(aes(x=NMDS1,y=NMDS2,colour=response),level = 0.50) +
+  geom_point(aes(x=NMDS1,y=NMDS2,shape=response,colour=response),size=1) +
+  geom_point(data = model1_centroids, aes(x=NMDS1, y=NMDS2, colour=response,
+                                          shape = response), size = 4) +
+  theme_classic()+
+  xlab(NULL)+ ylab(NULL) +
+  scale_color_manual(values = cbPalette,name = "Model Type",
+                     labels = c("Non-Acute COVID-19 Model",
+                                "Open Exchange Model",
+                                "Severe COVID-19 Model")) +
+  scale_shape(guide = 'none')
+p <- p + ggtitle("Differential Core Metabolism")
+p <- p + theme(text = element_text(size = 15))
+p <- p + annotate(geom = 'text', label = 'R²= 0.42\np-value= 0.001', x = Inf, y = -.075, hjust = 1, vjust = 0)
+
+p
+```
+
+# Model 2: severe vs non-acute model 
+
+```{r Model2_RF, echo=TRUE}
+#load data and set input and responses
+model2 <- read_excel("commonrxn_fluxdata.xlsx", sheet = 2)
+model2$Model <- as.factor(model2$Model)
+
+#add pre-fix to column names so that none start with number --> will cause issue with random forest
+colnames(model2) <- paste("pre", colnames(model2), sep = "_")
+
+#conduct random forest with 500 trees
+#https://cran.rstudio.com/web/packages/randomForestExplainer/vignettes/randomForestExplainer.html
+set.seed(2017)
+forest2 <- randomForest(pre_Model ~ ., data = model2, localImp = TRUE)
+importance_frame2 <- measure_importance(forest2)
+varImpPlot(forest2, n.var = 10, main = "Top 10 Predictive Rxns")
+
+plot_multi_way_importance(importance_frame2, size_measure = "no_of_nodes")
+plot_importance_rankings(importance_frame2)
+```
+
+
+```{r Model2_NMDS, echo=TRUE}
+#load data and set input and responses
+model2 <- read_excel("commonrxn_fluxdata.xlsx", sheet = 2)
+model2$Model <- as.factor(model2$Model)
+
+#add value to each cell so no negatives
+response2 <- model2$Model
+input2 <- model2[-1] + 1000
+
+#run ordination with bray curtis
+ord2 <- metaMDS(input2)
+data.scores2 <- as.data.frame(scores(ord2))
+data.scores2$model <- response2 
+
+# Measure of centroid
+model2_centroids <- aggregate(cbind(NMDS1,NMDS2) ~ model, data = data.scores2, mean)
+
+#PERMANOVA
+adon.results2<-adonis(input2 ~ response2, method="bray",perm=999)
+print(adon.results2)
+
+#plot NMDS with measure of centroid for each model
+p <- ggplot(data=data.scores2) + 
+  stat_ellipse(aes(x=NMDS1,y=NMDS2,colour=model),level = 0.50) +
+  geom_point(aes(x=NMDS1,y=NMDS2,shape=model,colour=model),size=1) +
+  geom_point(data = model2_centroids, aes(x=NMDS1, y=NMDS2, colour=model,
+                                          shape = model), size = 4) +
+  theme_classic()+
+  xlab(NULL)+ ylab(NULL) +
+  scale_color_manual(values = cbPalette,name = "Model Type",
+                     labels = c("Non-Acute COVID-19 Model",
+                                "Severe COVID-19 Model")) +
+  scale_shape(guide = 'none')
+p <- p + ggtitle("Flux Shifts between Severe vs. Non-Acute")
+p <- p + theme(text = element_text(size = 15))
+p <- p + annotate(geom = 'text', label = 'R²= 0.42\np-value= 0.001', x = Inf, y = -.075, hjust = 1, vjust = 0)
+p
+```

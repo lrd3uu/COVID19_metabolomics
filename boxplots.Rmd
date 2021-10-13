@@ -1,0 +1,166 @@
+---
+title: "Box Plots RF"
+author: "Lillian Dillard"
+date: "3/24/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(RColorBrewer)
+library(gridExtra)
+```
+
+```{r}
+severe_df <- read_csv('~/Documents/COVID-19 Paper/COVID Data/Metabolomics/severe_differential.csv')
+severe_df$group <- recode(severe_df$group, nonacute="Non-Acute COVID-19",
+                          severe = "Severe COVID-19")
+```
+
+
+```{r}
+nonacute_df <- read_csv('~/Documents/COVID-19 Paper/COVID Data/Metabolomics/nonacute_differential.csv')
+nonacute_df$group <- recode(severe_df$group, nonacute="Non-Acute COVID-19",
+                          severe = "Severe COVID-19")
+```
+
+```{r pressure, echo=FALSE}
+p <- ggplot(severe_df, aes(x=group, y=`Imidazolone-5-propionic acid`, fill = group))
+p1 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="4-Imidazolone-5-propionic Acid", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(severe_df, aes(x=group, y=severe_df$`Imidazol-5-yl-pyruvate`, fill = group))
+p2 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="Imidazole-pyruvate", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+
+```{r pressure, echo=FALSE}
+p <- ggplot(severe_df, aes(x=group, y=`Methylimidazoleacetic acid`, fill = group))
+p3<- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="Methylimidazoleacetic Acid", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+p <- ggplot(severe_df, aes(x=group, y=Acetoacetate, fill = group))
+p4 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="Acetoacetate", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(severe_df, aes(x=group, y=Hexanoylcarnitine, fill = group))
+p5 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="Hexanoylcarnitine", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(severe_df, aes(x=group, y=`3-methylglutarylcarnitine`, fill = group))
+p6 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="Methylglutarylcarnitine", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(severe_df, aes(x=group, y=X3.hydroxyisovalerylcarnitine, fill = group))
+p7 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="Hydroxyisovalerylcarnitine", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(severe_df, aes(x=group, y=`9,12-Hexadecadienoylcarnitine`, fill = group))
+p8 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="9,12-Hexadecadienoylcarnitine", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(severe_df, aes(x=group, y=`D-Galactonate`, fill = group))
+p9 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="D-Galactonate", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(severe_df, aes(x=group, y=L.gamma.Glutamyl.L.leucine, fill = group))
+p10 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="L-gamma-glutamyl-L-leucine", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(nonacute_df, aes(x=group, y=`glutathione disulfide`, fill = group))
+p11 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="Glutathione Disulfide", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(nonacute_df, aes(x=group, y=`Pyroglutamic Acid`, fill = group))
+p12 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="Pyroglutamic Acid", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(nonacute_df, aes(x=group, y=Spermine, fill = group))
+p13 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="Spermine", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(nonacute_df, aes(x=group, y=`5'-Methylthioadenosine`, fill = group))
+p14 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="5'-Methylthioadenosine", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(nonacute_df, aes(x=group, y=Anthranilate, fill = group))
+p15 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="Anthranilate", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(nonacute_df, aes(x=group, y=`L-Tryptophan`, fill = group))
+p10 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="L-Tryptophan", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(nonacute_df, aes(x=group, y=Melatonin, fill = group))
+p17 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="Melatonin", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(nonacute_df, aes(x=group, y=`5-Hydroxy-L-tryptophan`, fill = group))
+p18 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="5-Hydroxy-L-tryptophan", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(nonacute_df, aes(x=group, y=`3-Hydroxyanthranilic acid`, fill = group))
+p19 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5) + labs(title="3-Hydroxyanthranilic acid", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+p <- ggplot(nonacute_df, aes(x=group, y=Indoleacetaldehyde, fill = group))
+p20 <- p + geom_boxplot() + geom_jitter(width = 0.05, size = 0.5, size = 0.5) + labs(title="Indoleacetaldehyde", x= NULL, y = NULL)+ theme_classic() + theme(legend.position="none") + scale_fill_brewer(palette = 'Pastel1') + theme(axis.text=element_text(size=15, color = "black"),plot.title=element_text(size=20))
+```
+
+```{r}
+fig3a <- grid.arrange(p19, p15, p10, p17, p20, p18, nrow = 3)
+ggsave('~/Documents/COVID-19 Paper/COVID Figures/3a.jpg',
+       fig3a, dpi = 600, 
+       height =10, width = 10, units = 'in')
+
+fig3b <- grid.arrange(p11, p12, p13, nrow = 2)
+ggsave('~/Documents/COVID-19 Paper/COVID Figures/3b.jpg',
+       fig3b, dpi = 600, 
+       height =10, width = 10, units = 'in')
+
+fig3c <- grid.arrange(p14)
+ggsave('~/Documents/COVID-19 Paper/COVID Figures/3c.jpg',
+       fig3c, dpi = 600, 
+       height =5, width = 5, units = 'in')
+
+fig3d <- grid.arrange(p4, p8, p6, p5, nrow = 2)
+ggsave('~/Documents/COVID-19 Paper/COVID Figures/3d.jpg',
+       fig3d, dpi = 600, 
+       height =10, width = 10, units = 'in')
+
+fig3e <- grid.arrange(p1, p2, p3, nrow = 2)
+ggsave('~/Documents/COVID-19 Paper/COVID Figures/3e.jpg',
+       fig3e, dpi = 600, 
+       height =10, width = 10, units = 'in')
+
+fig3f <- grid.arrange(p10, p9)
+ggsave('~/Documents/COVID-19 Paper/COVID Figures/3f.jpg',
+       fig3f, dpi = 600, 
+       height =10, width = 5, units = 'in')
+
+masterfig <- grid.arrange(fig3a, fig3b, fig3c, nrow = 3)
+```
+
